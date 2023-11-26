@@ -13,7 +13,7 @@
 //             through ESP-NOW. Those  ESP8266's flash the LED's. 
   
 //           Input takes the form:   "mov, dis=x.zz" where x.zz is the float distance in meters
-//                                or "occ, dis=x.zz" where x.zz            
+//                                or "occ, dis=x.zz"           
 //                  
 // Method:   My previous attempts to show the warning LED's flashing never
 //           worked that well, An example is, they kept the LED's flashing long after
@@ -108,18 +108,11 @@ float MaxDistance = 60.00;
 bool Occupied = false;
 char  SwitchState[] = "x";
 
-const int buttonPin = 13;         // the number of the pushbutton pin
-const int TrigdledPin = 16;  
-const int FlashnledPin = 18;  
-
-int buttonState = 0;  
-int LastbuttonState = 0; 
-int ButtonWentLow = 0; 
-int OffSeconds = 8;  
-int SecondsLow = 0;    
+const int FlashnledPin = 18; 
 
 //================================= setup ===================================
 // Establish Serial2 to read the LD1125m values
+// Initialize ESPNOW
 
 void setup () {
    Serial.begin(115200);
@@ -200,8 +193,7 @@ void loop () {
        {         
         Serial.print(" Switch to 'Not Occupied' ==================== ");      
         Occupied = false;
-        SwitchState[0] = 'N'; 
-          digitalWrite(TrigdledPin, LOW);
+        SwitchState[0] = 'N';          
         digitalWrite(FlashnledPin, LOW);  
         broadcast("^E");    
        }
@@ -209,8 +201,7 @@ void loop () {
        { 
         Serial.println(" Switch to 'Occupied' ======");   
         Occupied = true;
-        SwitchState[0] = 'O'; 
-        digitalWrite(TrigdledPin, HIGH);
+        SwitchState[0] = 'O';        
         digitalWrite(FlashnledPin, HIGH);       
         broadcast("^S"); 
        }            
