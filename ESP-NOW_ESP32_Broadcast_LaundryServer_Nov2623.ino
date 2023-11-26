@@ -148,10 +148,7 @@ void setup () {
     ESP.restart();
   }
 
-  pinMode(TrigdledPin, OUTPUT); 
-  pinMode(FlashnledPin, OUTPUT); 
-  pinMode(buttonPin, INPUT);
- 
+  pinMode(TrigdledPin, OUTPUT);   pinMode(FlashnledPin, OUTPUT);  
 }
 
 //================================== loop =================================== 
