@@ -13,7 +13,7 @@
 //             through ESP-NOW. Those  ESP8266's flash the LED's. 
   
 //           Input takes the form:   "mov, dis=x.zz" where x.zz is the float distance in meters
-//                                or "occ, dis=x.zz"           
+//                                or "occ, dis=x.zz" where x.zz            
 //                  
 // Method:   My previous attempts to show the warning LED's flashing never
 //           worked that well, An example is, they kept the LED's flashing long after
@@ -106,13 +106,10 @@ float OneMeter = 39.37; // inches
 float inches ; 
 float MaxDistance = 60.00;
 bool Occupied = false;
-char  SwitchState[] = "x";
-
-const int FlashnledPin = 18; 
-
+char  SwitchState[] = "x";      
+const int FlashnledPin = 33;  
 //================================= setup ===================================
 // Establish Serial2 to read the LD1125m values
-// Initialize ESPNOW
 
 void setup () {
    Serial.begin(115200);
@@ -147,8 +144,10 @@ void setup () {
     delay(3000);
     ESP.restart();
   }
-
-  pinMode(FlashnledPin, OUTPUT);  
+  
+  pinMode(FlashnledPin, OUTPUT); 
+  
+ 
 }
 
 //================================== loop =================================== 
@@ -198,7 +197,7 @@ void loop () {
        { 
         Serial.println(" Switch to 'Occupied' ======");   
         Occupied = true;
-        SwitchState[0] = 'O';        
+        SwitchState[0] = 'O';         
         digitalWrite(FlashnledPin, HIGH);       
         broadcast("^S"); 
        }            
