@@ -2,11 +2,19 @@
 // Date: Nov, 2023
 // 
 // Hardware:           
-//          ESP32 using ESP-NOW to communicate with two clients and Serial2 to
+//          One ESP32(this sketch) using ESP-NOW to communicate with two clients, and Serial2 to
 //          recieve 'sentences' from the LD1125H.
+//          Two ESP8266's that get ESP-NOW messages to turn on/off the warning LED's.
 //          HLK-LD1125H DC3.3-5V 24Ghz Millimetre Wave Radar Module Human Presence Sensor
+//
+// Envirnonment:
+//          A laundry room situated between an interior hallway and the garage with a door
+//          on either. The interior of the laundry room is about 60" in length. Above 
+//          each door (on the outside) are two LED's. If the laundry is occupied those LED's 
+//          flash on/off for the purpose of warning anyone approaching either door that
+//          the room is accupied.
 //         
-// Purpose: 1. Flash LED's over the outside of both doors to the laundry room
+// Method: 1. Flash LED's over the outside of both doors to the laundry room
 //             providing a warning that the laundy room is occupied (or not)
 //
 //             This sketch communicates with two (one for each door) ESP8266's
@@ -15,17 +23,13 @@
 //           Input takes the form:   "mov, dis=x.zz" where x.zz is the float distance in meters
 //                                or "occ, dis=x.zz" where x.zz            
 //                  
-// Method:   My previous attempts to show the warning LED's flashing never
+//           My previous attempts, with other sensors, to show the warning LED's flashing never
 //           worked that well, An example is, they kept the LED's flashing long after
 //           the laundry room became unoccupied and since they required movement
 //           they would often stop flashing when the room was actually occupied.
-//           While this sensor is not always accurate it does, for the most part,
-//           keep the LED's flashing even when there is an occupant but not moving.
-//           It does not seem to report distance accuratly when a person is within  
-//           40" or so, but is quite accurate over that. In this application I just
-//           want to know if  the person is withn 60" so this limitation does not
-//           affect me here. Also, randomly, it will report a false distance for
-//           a very short time.
+//           The LD1125H solved all my problems. Simply stated...The LED's flash
+//           when the laundry room is occupied and do not when not occupied. 
+//           
 //                    
   
 #include <Wire.h> 
@@ -108,6 +112,10 @@ float MaxDistance = 60.00;
 bool Occupied = false;
 char  SwitchState[] = "x";      
 const int FlashnledPin = 33;  
+
+int LightThreshold = 4000;
+int PhotoResistorValue;
+int PhotoResistorPin =35;
 //================================= setup ===================================
 // Establish Serial2 to read the LD1125m values
 
@@ -152,17 +160,52 @@ void setup () {
 
 //================================== loop =================================== 
 
-void loop () {
-   count = 0;
-   char characters[5]  = "    " ;
+void loop () 
+ {
+
+//=============================Turn the LED's off ==============================
+
+// When there is no occupancy or movement the LD1125H stops sending sentences
+// This condition only exists once the room is exited.
+// Here if after 5 (just a guess) attempts to read sentences fail that condition
+// is interpreted to indicate the room is not occupied. Turn the LED's off. 
+  
+int xx = 0; 
+    if (Occupied) 
+     { 
+      while (!Serial2.available() && xx < 5)
+       {
+//      Serial.print(" xx1=");  Serial.println(xx);         
+        delay(50); xx++;    
+       }
+//    Serial.print(" xx2=");  Serial.println(xx); 
+      if(xx == 5)
+       {   
+        digitalWrite(FlashnledPin, LOW);     
+//      Serial.println("Nota Broadcast Turn flashing light off++++++++++++");
+        Occupied = false;
+        SwitchState[0] = 'N';          
+        digitalWrite(FlashnledPin, LOW);  
+        broadcast("^E");     
+       }   
+     }
+
+//=============================Read the input data stream ==============================
 
 // Input takes the form:   mov, dis=x.zz where x.zz is the float distance in meters
 //                      or occ, dis=x.zz where x.zz
-//                      and gather up the next 4 characters "x.zz"
+//                     'mov' = movement; 'occ' = occupied 
+// Here the '=' of '=x.zz' is searched for. When found the following 'x.zz' characters 
+// are converted to float, then the float is converted to inches.
 
-   while (Serial2.available())
+ count = 0;
+ char characters[5]  = "    " ;
+
+  while (Serial2.available())
    {
     characters[count] = Serial2.read();
+//  if ( characters[count] == 'o')  Serial.print("occupied"); 
+//  if ( characters[count] == 'm')  Serial.print("movement"); 
     if ( characters[count] == '=') 
      {  
       while(count < 4)
@@ -170,24 +213,24 @@ void loop () {
          while (!Serial2.available()) {}
          characters[count] = Serial2.read(); 
          count++;
-        }
+       }
 
 // convert them to float then to inches 
            
-       Serial.print(" meters=");  Serial.print(characters); 
-       inches = atof (characters);
-       inches *= OneMeter; 
-       Serial.print(" inches=");  Serial.print(inches); 
+      Serial.print(" meters=");  Serial.print(characters); 
+      inches = atof (characters);
+      inches *= OneMeter; 
+      Serial.print(" inches=");  Serial.print(inches); 
        
 // Now see if 'this' value is inside or outside the max distance and if 'this' 
 // value is the same (inside or outside) as the last one
      
-      if ( Occupied && inches <=  MaxDistance) {Serial.println(" O");}
-      if (!Occupied && inches > MaxDistance)   {Serial.println(" N**********************************");} 
+//    if ( Occupied && inches <=  MaxDistance) {Serial.println(" O");}
+//    if (!Occupied && inches > MaxDistance)   {Serial.println(" N**********************************");} 
        
       if (Occupied && inches >  MaxDistance)     
        {         
-        Serial.print(" Switch to 'Not Occupied' ==================== ");      
+//      Serial.print(" Switch to 'Not Occupied' ==================== ");      
         Occupied = false;
         SwitchState[0] = 'N';          
         digitalWrite(FlashnledPin, LOW);  
@@ -195,12 +238,12 @@ void loop () {
        }
       if (!Occupied && inches <=  MaxDistance) 
        { 
-        Serial.println(" Switch to 'Occupied' ======");   
+//      Serial.println(" Switch to 'Occupied' ======");   
         Occupied = true;
         SwitchState[0] = 'O';         
         digitalWrite(FlashnledPin, HIGH);       
         broadcast("^S"); 
        }            
      }  /* while(count < 4) */
-    }  /* while (Serial2.available()) */
-}  /* loop */
+   }  /* while (Serial2.available()) */
+ }  /* loop */
