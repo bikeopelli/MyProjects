@@ -109,13 +109,9 @@ int count =0;
 float OneMeter = 39.37; // inches
 float inches ; 
 float MaxDistance = 60.00;
-bool Occupied = false;
-char  SwitchState[] = "x";      
+bool Occupied = false;  
 const int FlashnledPin = 33;  
 
-int LightThreshold = 4000;
-int PhotoResistorValue;
-int PhotoResistorPin =35;
 //================================= setup ===================================
 // Establish Serial2 to read the LD1125m values
 
@@ -231,16 +227,15 @@ int xx = 0;
       if (Occupied && inches >  MaxDistance)     
        {         
 //      Serial.print(" Switch to 'Not Occupied' ==================== ");      
-        Occupied = false;
-        SwitchState[0] = 'N';          
+        Occupied = false;               
         digitalWrite(FlashnledPin, LOW);  
         broadcast("^E");    
        }
+       
       if (!Occupied && inches <=  MaxDistance) 
        { 
 //      Serial.println(" Switch to 'Occupied' ======");   
-        Occupied = true;
-        SwitchState[0] = 'O';         
+        Occupied = true;                
         digitalWrite(FlashnledPin, HIGH);       
         broadcast("^S"); 
        }            
